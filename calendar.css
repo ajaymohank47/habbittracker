@@ -1,0 +1,252 @@
+/* Calendar Styles */
+.calendar-container {
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 20px;
+  background: var(--bg-secondary, #f8f9fa);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.current-month {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 0 10px;
+}
+
+.current-month span {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+}
+
+.current-month button {
+  background: var(--primary-color, #007bff);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.current-month button:hover {
+  background: var(--primary-hover, #0056b3);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  background: var(--border-color, #dee2e6);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.day-header {
+  background: var(--primary-color, #007bff);
+  color: white;
+  padding: 12px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.calendar-day {
+  background: white;
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+
+.calendar-day:hover:not(.empty) {
+  background: var(--hover-bg, #f8f9fa);
+}
+
+.calendar-day.empty {
+  background: var(--bg-disabled, #f1f3f4);
+  cursor: default;
+}
+
+.calendar-day.today {
+  background: var(--today-bg, #e3f2fd);
+  font-weight: bold;
+  color: var(--primary-color, #007bff);
+}
+
+.calendar-day.selected {
+  border-color: var(--primary-color, #007bff);
+  background: var(--selected-bg, #e3f2fd);
+}
+
+.calendar-day.partially-completed::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 3px;
+  background: linear-gradient(to right, 
+    var(--success-color, #28a745) var(--completion, 50%), 
+    var(--bg-secondary, #e9ecef) var(--completion, 50%));
+  border-radius: 2px;
+}
+
+.calendar-day.fully-completed::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 3px;
+  background: var(--success-color, #28a745);
+  border-radius: 2px;
+}
+
+/* Progress Styles */
+.progress-container {
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 20px;
+  background: var(--bg-secondary, #f8f9fa);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.progress-header h3 {
+  margin: 0;
+  color: var(--text-primary, #333);
+  font-size: 1.2rem;
+}
+
+.progress-percentage {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--primary-color, #007bff);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: var(--bg-tertiary, #e9ecef);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--success-color, #28a745), var(--primary-color, #007bff));
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.progress-stats {
+  text-align: center;
+  color: var(--text-secondary, #666);
+  font-size: 0.9rem;
+}
+
+/* Enhanced Habit Styles */
+.habit-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 15px;
+  background: white;
+  border: 2px solid var(--border-color, #dee2e6);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.habit-btn:hover {
+  border-color: var(--primary-color, #007bff);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
+}
+
+.habit-btn.completed {
+  background: var(--success-light, #d4edda);
+  border-color: var(--success-color, #28a745);
+}
+
+.habit-title {
+  font-weight: 500;
+  color: var(--text-primary, #333);
+}
+
+.habit-btn.completed .habit-title {
+  text-decoration: line-through;
+  color: var(--text-secondary, #666);
+}
+
+/* Dark theme support */
+:root.dark {
+  --bg-secondary: #2d3748;
+  --bg-tertiary: #4a5568;
+  --bg-disabled: #2d3748;
+  --text-primary: #f7fafc;
+  --text-secondary: #a0aec0;
+  --border-color: #4a5568;
+  --hover-bg: #4a5568;
+  --today-bg: #2b6cb0;
+  --selected-bg: #2b6cb0;
+  --success-light: #2d5a3d;
+}
+
+:root.dark .calendar-day {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+:root.dark .habit-btn {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .calendar-container,
+  .progress-container {
+    margin: 10px;
+    padding: 15px;
+  }
+  
+  .calendar-day {
+    padding: 8px;
+    min-height: 40px;
+    font-size: 0.9rem;
+  }
+  
+  .current-month span {
+    font-size: 1.2rem;
+  }
+  
+  .current-month button {
+    width: 35px;
+    height: 35px;
+    font-size: 1rem;
+  }
+}

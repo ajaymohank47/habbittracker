@@ -1,3 +1,4 @@
+// DOM Elements
 const habits = document.querySelectorAll('.habit-btn');
 const themeBtn = document.querySelector('#theme');
 const modalContainer = document.querySelector('.modal-container');
@@ -9,105 +10,280 @@ const addBtn = document.querySelector('#add');
 const cancelBtn = document.querySelector('#cancel');
 const deleteBtn = document.querySelector('#delete');
 const contextMenu = document.querySelector('.context-menu');
+
+// Calendar Elements
+const calendarContainer = document.querySelector('.calendar-container') || createCalendarContainer();
+const currentMonthElement = document.querySelector('.current-month') || createCurrentMonthElement();
+const calendarGrid = document.querySelector('.calendar-grid') || createCalendarGrid();
+const progressContainer = document.querySelector('.progress-container') || createProgressContainer();
+
+// Global Variables
 let habitToBeDeleted;
+let currentDate = new Date();
+let selectedDate = new Date().toDateString();
+
+// Create calendar elements if they don't exist
+function createCalendarContainer() {
+  const container = document.createElement('div');
+  container.className = 'calendar-container';
+  document.body.appendChild(container);
+  return container;
+}
+
+function createCurrentMonthElement() {
+  const element = document.createElement('div');
+  element.className = 'current-month';
+  calendarContainer.appendChild(element);
+  return element;
+}
+
+function createCalendarGrid() {
+  const grid = document.createElement('div');
+  grid.className = 'calendar-grid';
+  calendarContainer.appendChild(grid);
+  return grid;
+}
+
+function createProgressContainer() {
+  const container = document.createElement('div');
+  container.className = 'progress-container';
+  document.body.appendChild(container);
+  return container;
+}
 
 // FUNCTIONS
 
 const storage = {
- saveTheme(value){
-   localStorage.setItem('habitsapp.theme', `${value}`);
- },
- checkTheme(){
-   return localStorage.getItem('habitsapp.theme');
- },
- saveHabit(object) {
-   const currentHabits = storage.getHabits();
-   if(currentHabits === null || currentHabits === '') {
-     localStorage.setItem('habitsapp.habits', JSON.stringify(object));
-   } else {
-     currentHabits.push(object);
-     localStorage.setItem('habitsapp.habits', JSON.stringify(currentHabits));
-   }
- },
- getHabits(){
-   let currentHabits;
-   if (localStorage.getItem('habitsapp.habits') === null){
-     currentHabits = [];
-   } else {
-     currentHabits = JSON.parse(localStorage.getItem('habitsapp.habits'));
-   }
-   return currentHabits;
- },
- habitStatus(id){
-   const currentHabits = storage.getHabits();
-   currentHabits.forEach(habit => {
-     if(habit.id !== Number(id)) return;
-     habit.completed === true ? habit.completed = false : habit.completed = true;
-   });
-   localStorage.setItem('habitsapp.habits', JSON.stringify(currentHabits));
- },
- deleteHabit(id){
-   const currentHabits = storage.getHabits();
-   
-   currentHabits.forEach((habit, index) => {
-     if(habit.id === Number(id)){
-       currentHabits.splice(index, 1);
-     }
-     localStorage.setItem('habitsapp.habits', JSON.stringify(currentHabits));
-   })
- }
+  saveTheme(value) {
+    localStorage.setItem('habitsapp.theme', `${value}`);
+  },
+  checkTheme() {
+    return localStorage.getItem('habitsapp.theme');
+  },
+  saveHabit(habit) {
+    const currentHabits = storage.getHabits();
+    currentHabits.push(habit);
+    localStorage.setItem('habitsapp.habits', JSON.stringify(currentHabits));
+  },
+  getHabits() {
+    const stored = localStorage.getItem('habitsapp.habits');
+    return stored ? JSON.parse(stored) : [];
+  },
+  updateHabit(updatedHabit) {
+    const currentHabits = storage.getHabits();
+    const index = currentHabits.findIndex(habit => habit.id === updatedHabit.id);
+    if (index !== -1) {
+      currentHabits[index] = updatedHabit;
+      localStorage.setItem('habitsapp.habits', JSON.stringify(currentHabits));
+    }
+  },
+  deleteHabit(id) {
+    const currentHabits = storage.getHabits();
+    const updatedHabits = currentHabits.filter(habit => habit.id !== Number(id));
+    localStorage.setItem('habitsapp.habits', JSON.stringify(updatedHabits));
+  },
+
+  // Calendar and completion tracking
+  saveHabitCompletion(habitId, date, completed) {
+    const key = `habitsapp.completion.${habitId}.${date}`;
+    localStorage.setItem(key, completed.toString());
+  },
+  getHabitCompletion(habitId, date) {
+    const key = `habitsapp.completion.${habitId}.${date}`;
+    const stored = localStorage.getItem(key);
+    return stored === 'true';
+  },
+  getHabitCompletionsForMonth(habitId, year, month) {
+    const completions = {};
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month, day).toDateString();
+      completions[date] = storage.getHabitCompletion(habitId, date);
+    }
+    return completions;
+  },
+  getAllCompletionsForDate(date) {
+    const habits = storage.getHabits();
+    const completions = {};
+
+    habits.forEach(habit => {
+      completions[habit.id] = storage.getHabitCompletion(habit.id, date);
+    });
+
+    return completions;
+  }
 }
 
 const ui = {
-  theme(){
+  theme() {
     themeBtn.classList.toggle('dark');
     const root = document.querySelector(':root');
     root.classList.toggle('dark');
-    themeBtn.classList.contains('dark') 
-      ? storage.saveTheme('dark') 
+    themeBtn.classList.contains('dark')
+      ? storage.saveTheme('dark')
       : storage.saveTheme('light');
   },
-  openModal(){
+  openModal() {
     modalContainer.classList.add('active');
     modalContainer.setAttribute('aria-hidden', 'false');
     newHabitTitle.focus();
   },
-  closeModal(){
+  closeModal() {
     modalContainer.classList.remove('active');
     modalContainer.setAttribute('aria-hidden', 'true');
     newHabitTitle.value = '';
     ui.removeSelectedIcon();
   },
-  removeSelectedIcon(){
+  removeSelectedIcon() {
     icons.forEach(icon => {
       icon.classList.remove('selected');
     })
   },
-  addNewHabit(title, icon, id, completed){
+  addNewHabit(title, icon, id) {
+    const isCompleted = storage.getHabitCompletion(id, selectedDate);
     const habitDiv = document.createElement('div');
     habitDiv.classList.add('habit');
     habitDiv.innerHTML = `
-      <button class="habit-btn ${completed === true ? 'completed' : ''}" data-id="${id}" data-title="${title}">
-      <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-        ${icon}
-      </svg>
-    </button>
+      <button class="habit-btn ${isCompleted ? 'completed' : ''}" data-id="${id}" data-title="${title}">
+        <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+          ${icon}
+        </svg>
+        <span class="habit-title">${title}</span>
+      </button>
     `;
     habitContainer.appendChild(habitDiv);
   },
-  refreshHabits(){
+  refreshHabits() {
     const uiHabits = document.querySelectorAll('.habit');
     uiHabits.forEach(habit => habit.remove());
     const currentHabits = storage.getHabits();
-    
+
     currentHabits.forEach(habit => {
-      ui.addNewHabit(habit.title, habit.icon, habit.id, habit.completed);
+      ui.addNewHabit(habit.title, habit.icon, habit.id);
+    });
+
+    ui.updateProgress();
+  },
+  deleteHabit() {
+    ui.refreshHabits();
+    ui.renderCalendar();
+  },
+
+  // Calendar UI functions
+  renderCalendar() {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    // Update month display
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'];
+    currentMonthElement.innerHTML = `
+      <button id="prevMonth">&lt;</button>
+      <span>${monthNames[month]} ${year}</span>
+      <button id="nextMonth">&gt;</button>
+    `;
+
+    // Clear calendar grid
+    calendarGrid.innerHTML = '';
+
+    // Add day headers
+    const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    dayHeaders.forEach(day => {
+      const dayHeader = document.createElement('div');
+      dayHeader.className = 'day-header';
+      dayHeader.textContent = day;
+      calendarGrid.appendChild(dayHeader);
+    });
+
+    // Get first day of month and number of days
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // Add empty cells for days before month starts
+    for (let i = 0; i < firstDay; i++) {
+      const emptyDay = document.createElement('div');
+      emptyDay.className = 'calendar-day empty';
+      calendarGrid.appendChild(emptyDay);
+    }
+
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayElement = document.createElement('div');
+      const dayDate = new Date(year, month, day);
+      const dateString = dayDate.toDateString();
+
+      dayElement.className = 'calendar-day';
+      dayElement.textContent = day;
+      dayElement.dataset.date = dateString;
+
+      // Highlight today
+      if (dateString === new Date().toDateString()) {
+        dayElement.classList.add('today');
+      }
+
+      // Highlight selected date
+      if (dateString === selectedDate) {
+        dayElement.classList.add('selected');
+      }
+
+      // Add completion indicator
+      const completions = storage.getAllCompletionsForDate(dateString);
+      const habits = storage.getHabits();
+      const totalHabits = habits.length;
+      const completedHabits = Object.values(completions).filter(Boolean).length;
+
+      if (totalHabits > 0) {
+        const percentage = Math.round((completedHabits / totalHabits) * 100);
+        dayElement.style.setProperty('--completion', `${percentage}%`);
+
+        if (percentage === 100) {
+          dayElement.classList.add('fully-completed');
+        } else if (percentage > 0) {
+          dayElement.classList.add('partially-completed');
+        }
+      }
+
+      calendarGrid.appendChild(dayElement);
+    }
+
+    // Add event listeners for navigation
+    document.getElementById('prevMonth')?.addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      ui.renderCalendar();
+    });
+
+    document.getElementById('nextMonth')?.addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      ui.renderCalendar();
     });
   },
-  deleteHabit(id) {
-    const habitToDelete = document.querySelector(`[data-id="${id}"]`);
-    habitToDelete.remove();
-    ui.refreshHabits();
+
+  updateProgress() {
+    const habits = storage.getHabits();
+    const totalHabits = habits.length;
+
+    if (totalHabits === 0) {
+      progressContainer.innerHTML = '<p>No habits yet. Create your first habit!</p>';
+      return;
+    }
+
+    const completions = storage.getAllCompletionsForDate(selectedDate);
+    const completedHabits = Object.values(completions).filter(Boolean).length;
+    const percentage = Math.round((completedHabits / totalHabits) * 100);
+
+    progressContainer.innerHTML = `
+      <div class="progress-header">
+        <h3>Progress for ${new Date(selectedDate).toLocaleDateString()}</h3>
+        <span class="progress-percentage">${percentage}%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: ${percentage}%"></div>
+      </div>
+      <div class="progress-stats">
+        <span>${completedHabits} of ${totalHabits} habits completed</span>
+      </div>
+    `;
   }
 }
 
@@ -115,15 +291,17 @@ const ui = {
 
 // EVENT: window load
 window.addEventListener('DOMContentLoaded', () => {
-  //Load theme
+  // Load theme
   const theme = storage.checkTheme();
-  if(theme === 'dark') ui.theme();
-  
-  //update uI
-  ui.refreshHabits();
-})
+  if (theme === 'dark') ui.theme();
 
-// EVENT : theme button
+  // Initialize UI
+  ui.refreshHabits();
+  ui.renderCalendar();
+  ui.updateProgress();
+});
+
+// EVENT: theme button
 themeBtn.addEventListener('click', ui.theme);
 
 // EVENT: add habit btn
@@ -141,63 +319,116 @@ icons.forEach(icon => {
 });
 
 // EVENT: add new habit btn
-addBtn.addEventListener('click', ()=> {
-  const habitTitle = newHabitTitle.value;
+addBtn.addEventListener('click', () => {
+  const habitTitle = newHabitTitle.value.trim();
+
+  if (!habitTitle) {
+    alert('Please enter a habit title');
+    return;
+  }
+
   let habitIcon;
   icons.forEach(icon => {
-    if(!icon.classList.contains('selected')) return;
+    if (!icon.classList.contains('selected')) return;
     habitIcon = icon.querySelector('svg').innerHTML;
   });
-  const habitID = Math.random();
-  ui.addNewHabit(habitTitle, habitIcon, habitID);
-  ui.closeModal();
+
+  if (!habitIcon) {
+    alert('Please select an icon');
+    return;
+  }
+
+  const habitID = Date.now();
   const habit = {
     title: habitTitle,
     icon: habitIcon,
     id: habitID,
-    completed: false,
+    createdAt: new Date().toISOString()
   };
+
   storage.saveHabit(habit);
-})
+  ui.refreshHabits();
+  ui.renderCalendar();
+  ui.closeModal();
+});
 
 // EVENT: complete habit
 habitContainer.addEventListener('click', e => {
-  if(!e.target.classList.contains('habit-btn')) return;
-  e.target.classList.toggle('completed');
-  storage.habitStatus(e.target.dataset.id);
-})
+  const habitBtn = e.target.closest('.habit-btn');
+  if (!habitBtn) return;
+
+  const habitId = Number(habitBtn.dataset.id);
+  const isCurrentlyCompleted = habitBtn.classList.contains('completed');
+
+  // Toggle completion
+  habitBtn.classList.toggle('completed');
+
+  // Save completion status for selected date
+  storage.saveHabitCompletion(habitId, selectedDate, !isCurrentlyCompleted);
+
+  // Update progress and calendar
+  ui.updateProgress();
+  ui.renderCalendar();
+});
+
+// EVENT: calendar day selection
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('calendar-day') && !e.target.classList.contains('empty')) {
+    // Remove previous selection
+    document.querySelectorAll('.calendar-day.selected').forEach(day => {
+      day.classList.remove('selected');
+    });
+
+    // Add selection to clicked day
+    e.target.classList.add('selected');
+    selectedDate = e.target.dataset.date;
+
+    // Refresh habits for selected date
+    ui.refreshHabits();
+  }
+});
 
 // Event: context menu
 habitContainer.addEventListener('contextmenu', e => {
-  if(!e.target.classList.contains('habit-btn')) return;
+  const habitBtn = e.target.closest('.habit-btn');
+  if (!habitBtn) return;
+
   e.preventDefault();
-  habitToBeDeleted = e.target.dataset.id;
+  habitToBeDeleted = habitBtn.dataset.id;
   const { clientX: mouseX, clientY: mouseY } = e;
   contextMenu.style.top = `${mouseY}px`;
   contextMenu.style.left = `${mouseX}px`;
   const contextTitle = document.querySelector('#habitTitle');
-  contextTitle.textContent = e.target.dataset.title;
+  if (contextTitle) {
+    contextTitle.textContent = habitBtn.dataset.title;
+  }
   contextMenu.classList.add('active');
 });
 
 // Event: delete habit btn
 deleteBtn.addEventListener('click', () => {
   storage.deleteHabit(habitToBeDeleted);
-  ui.deleteHabit(habitToBeDeleted);
+  ui.deleteHabit();
   contextMenu.classList.remove('active');
 });
 
-
-// ADDITIONAL FUNCTIONALITY NOT IN THE VIDEOS (https://www.youtube.com/watch?v=_FFkaBTqJto&list=PLoqZcxvpWzzdaaXdLWuQ-VX5IhRoM94qb)
-
+// Close context menu when clicking outside
 window.addEventListener('click', e => {
-  if(contextMenu.classList.contains('active')){
-    if(e.target.closest('.context-menu')) return; 
+  if (contextMenu.classList.contains('active')) {
+    if (e.target.closest('.context-menu')) return;
     contextMenu.classList.remove('active');
-  };
+  }
 });
 
+// Keyboard shortcuts
 window.addEventListener('keyup', e => {
- if(e.key !== "Escape")return; if(modalContainer.classList.contains('active'))ui.closeModal();
-  contextMenu.classList.remove('active');
+  if (e.key !== "Escape") return;
+
+  if (modalContainer.classList.contains('active')) {
+    ui.closeModal();
+  }
+
+  if (contextMenu.classList.contains('active')) {
+    contextMenu.classList.remove('active');
+  }
 });
